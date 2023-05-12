@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, session
 import numpy as np
 from database import gimnas
 import datetime
+from datetime import datetime as dt
+import pandas as pd
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mysecretkey'
@@ -20,15 +22,33 @@ def comprova(reserva):
 			retorno="La pista ja està ocupada"
 	return retorno
 
+# def TaulaPistes(llistaRes):
+# 	taula=[]
+# 	for fila in range(0,5):
+# 		filaTemp=[]
+# 		for columna in range(0,6):
+# 			tempVal=""
+# 			for reserva in llistaRes:
+# 				if reserva['data'].weekday()==fila and reserva['data'].hour==columna+15:
+# 					tempVal=tempVal+reserva['nom']+" "+reserva['llinatges']+" ["+reserva['tipo']+"]"+" "
+# 			filaTemp.append(tempVal)
+# 		taula.append(filaTemp)
+# 	return taula
+
 def TaulaPistes(llistaRes):
 	taula=[]
 	for fila in range(0,5):
 		filaTemp=[]
 		for columna in range(0,6):
 			tempVal=""
-			for reserva in llistaRes:
-				if reserva['data'].weekday()==fila and reserva['data'].hour==columna+15:
-					tempVal=tempVal+reserva['nom']+" "+reserva['llinatges']+" ["+reserva['tipo']+"]"+" "
+			if (llistaRes):
+				for reserva in llistaRes:
+					start = reserva['start'].get('dateTime', reserva['start'].get('date'))
+					start_dtm = pd.to_datetime(start)
+					# start_dtm = dt.strptime(start, "%m/%d/%y'T'HH:MM:SS")
+					# print("OK start************************************************", start)
+					if start_dtm.weekday()==fila and start_dtm.hour==columna+15:
+						tempVal=tempVal+reserva['summary']
 			filaTemp.append(tempVal)
 		taula.append(filaTemp)
 	return taula
@@ -67,11 +87,15 @@ def reservar():
 		return render_template('UT3_tasca_registre.html',alerta=comp)
 
 @app.route('/reserves')
+# def reserves():
+# 	llistaRes=gimnas.cargaReservas(session['lunes'])
+# 	taulaReserves=TaulaPistes(llistaRes)
+# 	return render_template('UT3_tasca_reserves.html',taula=taulaReserves)
+
 def reserves():
-	llistaRes=gimnas.cargaReservas(session['lunes'])
+	llistaRes=gimnas.cargaReservasAPI(session['lunes'])
 	taulaReserves=TaulaPistes(llistaRes)
 	return render_template('UT3_tasca_reserves.html',taula=taulaReserves)
-
 
 @app.route('/usuaris')
 def usuaris():
@@ -131,7 +155,7 @@ def augmentasetmana():
 	viernes=datetime.datetime.strptime(session['viernes'],'%d-%m-%Y')+datetime.timedelta(days=7)
 	session['lunes']=lunes.strftime("%d-%m-%Y")
 	session['viernes']=viernes.strftime("%d-%m-%Y")	
-	llistaRes=gimnas.cargaReservas(session['lunes'])
+	llistaRes=gimnas.cargaReservasAPI(session['lunes'])
 	taulaReserves=TaulaPistes(llistaRes)
 	return render_template('UT3_tasca_reserves.html',taula=taulaReserves)
 
@@ -141,7 +165,7 @@ def restasetmana():
 	viernes=datetime.datetime.strptime(session['viernes'],'%d-%m-%Y')-datetime.timedelta(days=7)
 	session['lunes']=lunes.strftime("%d-%m-%Y")
 	session['viernes']=viernes.strftime("%d-%m-%Y")	
-	llistaRes=gimnas.cargaReservas(session['lunes'])
+	llistaRes=gimnas.cargaReservasAPI(session['lunes'])
 	taulaReserves=TaulaPistes(llistaRes)
 	return render_template('UT3_tasca_reserves.html',taula=taulaReserves)
 
